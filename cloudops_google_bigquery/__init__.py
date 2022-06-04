@@ -1,2 +1,3 @@
-"""The cloudops_google_bigquery package."""
-__version__ = "0.1.0"
+from cloudops_google_bigquery.bigquery import BigQuery
+
+__all__ = ["BigQuery"]
