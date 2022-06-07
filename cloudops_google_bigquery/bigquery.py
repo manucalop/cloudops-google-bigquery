@@ -3,20 +3,42 @@ from google.oauth2 import service_account
 from google.cloud import bigquery
 import pandas as pd
 from google.cloud.exceptions import NotFound
+import pydantic
+from typing import Optional
+import json
 
 logger = get_logger(__name__)
 
 
+class BigQueryConfig(pydantic.BaseModel):
+    project_id: str
+    location: str
+    service_account_file: str
+    service_account_info: Optional[dict] = None
+
+    @pydantic.root_validator
+    def fill_service_account_info(cls, values):
+        if not values.get("service_account_info"):
+            values["service_account_info"] = json.load(open(values["service_account_file"]))
+
+
+def get_client(config: BigQueryConfig):
+    """
+    Get a BigQuery client.
+    """
+    credentials = service_account.Credentials.from_service_account_info(config.service_account_info)
+    return bigquery.Client(
+        credentials=credentials,
+        project=config.project_id,
+        location=config.location,
+    )
+
+
 class BigQuery:
-    def __init__(self, project_id: str, auth_file: str, location: str) -> None:
-        self.project_id = project_id
-        self.location = location
-        self.credentials = service_account.Credentials.from_service_account_file(auth_file)
-        self.client = bigquery.Client(
-            credentials=self.credentials,
-            project=self.project_id,
-            location=self.location,
-        )
+    def __init__(self, config: BigQueryConfig) -> None:
+        self.project_id = config.project_id
+        self.location = config.location
+        self.client = get_client(config)
         self.logger = get_logger(__name__)
 
     def query(self, query: str, location: str = None) -> pd.DataFrame:
