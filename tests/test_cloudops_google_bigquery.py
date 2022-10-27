@@ -1,5 +1,6 @@
 import unittest
-from cloudops_google_bigquery import BigQuery
+
+from cloudops.google.bigquery import BigQuery
 
 
 class TestBigQuery(unittest.TestCase):
